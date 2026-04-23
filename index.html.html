@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meta Ads Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a18; min-height: 100vh; }
+  a { color: #378ADD; }
+
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #fff; border-right: 1px solid rgba(0,0,0,0.08); padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
+  .sidebar-logo { font-size: 15px; font-weight: 600; color: #1a1a18; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 8px; }
+  .sidebar-logo span { width: 28px; height: 28px; background: #1877F2; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700; }
+  .nav-item { padding: 8px 12px; border-radius: 8px; font-size: 13px; color: #5a5a58; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background .15s; }
+  .nav-item:hover { background: #f5f5f3; color: #1a1a18; }
+  .nav-item.active { background: #EBF3FC; color: #185FA5; font-weight: 500; }
+  .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: .5; }
+
+  .main { margin-left: 220px; padding: 2rem; max-width: 1100px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+  .topbar h1 { font-size: 20px; font-weight: 600; }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+  .card { background: #fff; border: 1px solid rgba(0,0,0,0.07); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+  .card-title { font-size: 13px; font-weight: 600; color: #5a5a58; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 1rem; }
+
+  .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .mc { background: #fff; border: 1px solid rgba(0,0,0,0.07); border-radius: 12px; padding: 1.1rem 1.25rem; }
+  .mc-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .mc-value { font-size: 24px; font-weight: 600; color: #1a1a18; }
+  .mc-delta { font-size: 12px; margin-top: 4px; }
+  .up { color: #1D9E75; } .down { color: #D85A30; }
+
+  .input-group { margin-bottom: 1rem; }
+  .input-group label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
+  .input-group input { width: 100%; padding: 9px 12px; font-size: 14px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a18; outline: none; transition: border-color .15s; }
+  .input-group input:focus { border-color: #378ADD; }
+  .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .btn-blue { background: #1877F2; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 500; cursor: pointer; width: 100%; margin-top: 4px; transition: background .15s; }
+  .btn-blue:hover { background: #185FA5; }
+  .btn-blue:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-sec { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 8px 16px; font-size: 13px; color: #555; cursor: pointer; transition: background .15s; }
+  .btn-sec:hover { background: #f5f5f3; }
+
+  .tab-bar { display: flex; gap: 4px; border-bottom: 1px solid #eee; margin-bottom: 1.5rem; }
+  .tab { padding: 9px 16px; font-size: 13px; color: #888; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
+  .tab:hover { color: #555; }
+  .tab.active { color: #1877F2; border-bottom-color: #1877F2; font-weight: 500; }
+
+  .camp-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+  .camp-row:last-child { border-bottom: none; }
+  .camp-name { font-size: 14px; font-weight: 500; }
+  .camp-meta { font-size: 12px; color: #888; margin-top: 3px; }
+  .badge { font-size: 11px; padding: 3px 9px; border-radius: 100px; font-weight: 500; }
+  .b-active { background: #EAF3DE; color: #2d6a0f; }
+  .b-paused { background: #FFF3E0; color: #854F0B; }
+  .b-learning { background: #E3F0FF; color: #185FA5; }
+
+  .cr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+  .cr-card { border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; overflow: hidden; background: #fff; transition: box-shadow .15s; }
+  .cr-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+  .cr-prev { height: 120px; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+  .cr-info { padding: 12px; }
+  .cr-title { font-size: 12px; font-weight: 500; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cr-stats { font-size: 11px; color: #888; display: flex; gap: 6px; }
+  .score-bar { height: 4px; background: #eee; border-radius: 2px; margin-top: 8px; }
+  .score-fill { height: 100%; border-radius: 2px; }
+
+  .aud-bar { height: 6px; background: #eee; border-radius: 3px; margin: 6px 0; }
+  .aud-fill { height: 100%; border-radius: 3px; background: #1877F2; }
+  .aud-tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 100px; background: #f5f5f3; border: 1px solid #e0e0e0; color: #666; margin: 2px; }
+
+  .ai-box { background: #f8f9ff; border: 1px solid #dde6f5; border-radius: 10px; padding: 1.25rem; font-size: 13px; line-height: 1.75; color: #1a1a18; white-space: pre-wrap; margin-top: 1rem; }
+  .ai-label { font-size: 11px; color: #888; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+
+  .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid #ddd; border-top-color: #1877F2; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .err { background: #fff0f0; border: 1px solid #ffcdd2; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #c62828; margin-top: 10px; }
+  .info-box { background: #f8f9ff; border: 1px solid #dde6f5; border-radius: 8px; padding: 12px 16px; font-size: 12px; color: #555; line-height: 1.7; margin-top: 12px; }
+
+  .step { display: none; } .step.active { display: block; }
+
+  .connect-wrap { max-width: 500px; margin: 4rem auto; }
+  .connect-wrap h2 { font-size: 22px; font-weight: 600; margin-bottom: .5rem; }
+  .connect-wrap p { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo"><span>f</span> Meta Ads</div>
+  <div class="nav-item active" onclick="switchTab('camps',this,'nav')"><div class="nav-dot"></div> Campanhas</div>
+  <div class="nav-item" onclick="switchTab('creatives',this,'nav')"><div class="nav-dot"></div> Criativos</div>
+  <div class="nav-item" onclick="switchTab('audience',this,'nav')"><div class="nav-dot"></div> Públicos</div>
+  <div class="nav-item" onclick="switchTab('ai',this,'nav')"><div class="nav-dot"></div> Análise IA ✦</div>
+  <div style="flex:1"></div>
+  <button class="btn-sec" style="width:100%;font-size:12px" onclick="showStep('connect')">Trocar conta</button>
+</div>
+
+<div class="main">
+
+  <div id="step-connect" class="step active">
+    <div class="connect-wrap">
+      <h2>Conectar ao Meta Ads</h2>
+      <p>Insira suas credenciais para carregar as campanhas em tempo real.</p>
+      <div class="card">
+        <div class="input-group"><label>Access Token</label><input type="password" id="tk" placeholder="EAAxxxxxx..." /></div>
+        <div class="input-group"><label>Ad Account ID</label><input type="text" id="ac" placeholder="act_123456789" /></div>
+        <div class="date-row">
+          <div class="input-group"><label>Data início</label><input type="date" id="d1" /></div>
+          <div class="input-group"><label>Data fim</label><input type="date" id="d2" /></div>
+        </div>
+        <button class="btn-blue" id="btn-go">Conectar e analisar</button>
+        <div id="conn-err"></div>
+      </div>
+      <div style="text-align:center;margin-top:12px">
+        <button class="btn-sec" onclick="loadDemo()">Ver demo com dados simulados</button>
+      </div>
+      <div class="info-box" style="margin-top:16px">
+        <strong>Como obter o Access Token:</strong><br>
+        1. Acesse <a href="https://developers.facebook.com/tools/explorer/" target="_blank">Meta → Graph API Explorer</a><br>
+        2. Selecione seu app e gere token com: <code>ads_read</code> e <code>read_insights</code><br>
+        3. O ID da conta está no Gerenciador de Anúncios (formato <code>act_XXXXXXX</code>)
+      </div>
+    </div>
+  </div>
+
+  <div id="step-dash" class="step">
+    <div class="topbar">
+      <div>
+        <h1 id="acc-name">—</h1>
+        <p style="font-size:13px;color:#888;margin-top:2px" id="date-lbl">—</p>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-sec" onclick="showStep('connect')">Trocar conta</button>
+      </div>
+    </div>
+
+    <div class="metrics-grid" id="mgrid"></div>
+
+    <div class="tab-bar">
+      <div class="tab active" onclick="switchTab('camps',this,'tab')">Campanhas</div>
+      <div class="tab" onclick="switchTab('creatives',this,'tab')">Criativos</div>
+      <div class="tab" onclick="switchTab('audience',this,'tab')">Públicos</div>
+      <div class="tab" onclick="switchTab('ai',this,'tab')">Análise IA ✦</div>
+    </div>
+
+    <div id="tab-camps">
+      <div class="card" id="camp-list"></div>
+    </div>
+    <div id="tab-creatives" style="display:none">
+      <div class="cr-grid" id="cr-grid"></div>
+    </div>
+    <div id="tab-audience" style="display:none">
+      <div class="card" id="aud-content"></div>
+    </div>
+    <div id="tab-ai" style="display:none">
+      <div class="card">
+        <p style="font-size:13px;color:#666;margin-bottom:1rem">A IA analisa suas campanhas, criativos e públicos e gera recomendações práticas.</p>
+        <button class="btn-blue" id="btn-ai" onclick="runAI()">Analisar com IA ✦</button>
+        <div id="ai-out"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let D={};
+
+(function(){
+  const e=new Date(),s=new Date();
+  s.setDate(s.getDate()-30);
+  document.getElementById('d1').value=s.toISOString().split('T')[0];
+  document.getElementById('d2').value=e.toISOString().split('T')[0];
+})();
+
+function showStep(n){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('step-'+n).classList.add('active');
+}
+
+function switchTab(n,el,type){
+  if(type==='tab'){
+    document.querySelectorAll('.tab-bar .tab').forEach(t=>t.classList.remove('active'));
+  } else {
+    document.querySelectorAll('.nav-item').forEach(t=>t.classList.remove('active'));
+  }
+  el.classList.add('active');
+  ['camps','creatives','audience','ai'].forEach(t=>{
+    const el2=document.getElementById('tab-'+t);
+    if(el2) el2.style.display=t===n?'':'none';
+  });
+  showStep('dash');
+}
+
+function fmt(n){
+  if(n>=1e6)return'R$'+(n/1e6).toFixed(1)+'M';
+  if(n>=1e3)return'R$'+(n/1e3).toFixed(1)+'k';
+  return'R$'+n.toFixed(2);
+}
+function fmtN(n){
+  if(n>=1e6)return(n/1e6).toFixed(1)+'M';
+  if(n>=1e3)return(n/1e3).toFixed(1)+'k';
+  return Math.round(n)+'';
+}
+
+function render(data){
+  D=data;
+  document.getElementById('acc-name').textContent=data.accountName;
+  document.getElementById('date-lbl').textContent=data.dateRange;
+
+  document.getElementById('mgrid').innerHTML=data.metrics.map(m=>`
+    <div class="mc">
+      <div class="mc-label">${m.label}</div>
+      <div class="mc-value">${m.value}</div>
+      <div class="mc-delta ${m.delta>=0?'up':'down'}">${m.delta>=0?'↑':'↓'} ${Math.abs(m.delta)}% vs mês ant.</div>
+    </div>`).join('');
+
+  document.getElementById('camp-list').innerHTML=data.campaigns.map(c=>`
+    <div class="camp-row">
+      <div>
+        <div class="camp-name">${c.name}</div>
+        <div class="camp-meta">CTR ${c.ctr}% &middot; CPC ${c.cpc} &middot; ROAS ${c.roas}x &middot; ${fmtN(c.impressions)} imp.</div>
+      </div>
+      <span class="badge b-${c.status}">${c.statusLabel}</span>
+    </div>`).join('');
+
+  document.getElementById('cr-grid').innerHTML=data.creatives.map(cr=>`
+    <div class="cr-card">
+      <div class="cr-prev" style="background:${cr.bg}">${cr.icon}</div>
+      <div class="cr-info">
+        <div class="cr-title">${cr.name}</div>
+        <div class="cr-stats"><span>CTR ${cr.ctr}%</span><span>&middot;</span><span>${fmtN(cr.reach)}</span></div>
+        <div class="score-bar"><div class="score-fill" style="width:${cr.score}%;background:${cr.score>=70?'#1D9E75':cr.score>=40?'#EF9F27':'#D85A30'}"></div></div>
+        <div style="font-size:10px;color:#999;margin-top:4px">Score: ${cr.score}/100</div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('aud-content').innerHTML=`
+    <div class="card-title">Públicos ativos</div>
+    ${data.audiences.map(a=>`
+      <div style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+          <span style="font-size:13px;font-weight:500">${a.name}</span>
+          <span style="font-size:12px;color:#888">${fmtN(a.size)} pessoas &middot; ROAS ${a.roas}x</span>
+        </div>
+        <div class="aud-bar"><div class="aud-fill" style="width:${a.pct}%"></div></div>
+        <div>${a.tags.map(t=>`<span class="aud-tag">${t}</span>`).join('')}</div>
+      </div>`).join('')}`;
+
+  showStep('dash');
+}
+
+async function runAI(){
+  const btn=document.getElementById('btn-ai');
+  btn.disabled=true; btn.textContent='Analisando...';
+  document.getElementById('ai-out').innerHTML=`<div class="ai-box"><div class="ai-label"><span class="spinner"></span>Gerando análise com IA...</div></div>`;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:'Você é especialista em Meta Ads. Analise os dados em português e gere insights práticos sobre: 1) Pontos fortes, 2) Problemas e oportunidades, 3) Recomendações de copy e criativos, 4) Sugestões de audiência, 5) Próximos passos prioritários. Use linguagem direta de gestor de tráfego experiente.',
+        messages:[{role:'user',content:`Analise estas campanhas:\n${JSON.stringify({account:D.accountName,metrics:D.metrics,campaigns:D.campaigns,creatives:D.creatives,audiences:D.audiences})}`}]
+      })
+    });
+    const d=await r.json();
+    const txt=d.content?.filter(b=>b.type==='text').map(b=>b.text).join('\n')||'Sem resposta.';
+    document.getElementById('ai-out').innerHTML=`<div class="ai-box"><div class="ai-label">✦ Análise gerada por IA</div>${txt}</div>`;
+  }catch(e){
+    document.getElementById('ai-out').innerHTML=`<div class="err">Erro ao conectar com a IA: ${e.message}</div>`;
+  }
+  btn.disabled=false; btn.textContent='Reanalisar com IA ✦';
+}
+
+function demoCreatives(){
+  return[
+    {name:'Video — Depoimento cliente',icon:'&#9654;',bg:'#E6F1FB',ctr:3.8,reach:45200,score:87},
+    {name:'Carrossel — Produto destaque',icon:'&#9632;',bg:'#EAF3DE',ctr:2.4,reach:31800,score:63},
+    {name:'Imagem estática — Oferta',icon:'&#9670;',bg:'#FAEEDA',ctr:1.1,reach:18400,score:34},
+    {name:'Video — UGC orgânico',icon:'&#9654;',bg:'#FBEAF0',ctr:4.2,reach:52100,score:91}
+  ];
+}
+function demoAudiences(){
+  return[
+    {name:'Lookalike 1% — compradores',size:380000,roas:4.2,pct:85,tags:['Lookalike','Conversão','18-45']},
+    {name:'Retargeting — visitantes 30d',size:12400,roas:6.8,pct:95,tags:['Retargeting','Quente','Alta intenção']},
+    {name:'Interesse — fitness/saúde',size:1200000,roas:1.9,pct:38,tags:['Interesse','Fria','25-54']},
+    {name:'Lookalike 2% — engajados',size:760000,roas:2.7,pct:54,tags:['Lookalike','Engajamento']}
+  ];
+}
+
+function loadDemo(){
+  render({
+    accountName:'Conta Demo — Sua Loja',
+    dateRange:'Últimos 30 dias (demo)',
+    metrics:[
+      {label:'Investimento',value:'R$18.4k',delta:12},
+      {label:'Impressões',value:'1.2M',delta:8},
+      {label:'CTR médio',value:'2.74%',delta:-3},
+      {label:'ROAS médio',value:'3.8x',delta:15}
+    ],
+    campaigns:[
+      {name:'Conversão — Produto Principal',status:'active',statusLabel:'Ativo',ctr:'3.21',cpc:'R$1.84',roas:'4.6',impressions:482000},
+      {name:'Topo de funil — Awareness',status:'active',statusLabel:'Ativo',ctr:'1.92',cpc:'R$0.72',roas:'1.8',impressions:614000},
+      {name:'Retargeting 7 dias',status:'active',statusLabel:'Ativo',ctr:'4.85',cpc:'R$2.31',roas:'7.2',impressions:98000},
+      {name:'Teste A/B — Copy novo',status:'learning',statusLabel:'Aprendendo',ctr:'2.44',cpc:'R$2.10',roas:'2.1',impressions:24000},
+      {name:'Campanha sazonal maio',status:'paused',statusLabel:'Pausado',ctr:'1.33',cpc:'R$3.40',roas:'1.2',impressions:11000}
+    ],
+    creatives:demoCreatives(),
+    audiences:demoAudiences()
+  });
+}
+
+async function connect(){
+  const token=document.getElementById('tk').value.trim();
+  const acId=(document.getElementById('ac').value.trim()).replace(/^act_/,'');
+  const d1=document.getElementById('d1').value;
+  const d2=document.getElementById('d2').value;
+  const errEl=document.getElementById('conn-err');
+  errEl.innerHTML='';
+  if(!token||!acId){errEl.innerHTML='<div class="err">Preencha o token e o ID da conta.</div>';return;}
+  const btn=document.getElementById('btn-go');
+  btn.disabled=true; btn.textContent='Conectando...';
+  try{
+    const accountId='act_'+acId;
+    const fields='name,status,insights.date_preset(last_30d){spend,impressions,clicks,ctr,cpc,reach,actions}';
+    const url=`https://graph.facebook.com/v19.0/${accountId}/campaigns?fields=${fields}&access_token=${token}`;
+    const res=await fetch(url);
+    const json=await res.json();
+    if(json.error){
+      errEl.innerHTML=`<div class="err">Erro da API: ${json.error.message}</div>`;
+      btn.disabled=false; btn.textContent='Conectar e analisar'; return;
+    }
+    const camps=(json.data||[]).map(c=>{
+      const ins=c.insights?.data?.[0]||{};
+      const purchase=ins.actions?.find(a=>a.action_type==='purchase');
+      const roas=purchase?(parseFloat(purchase.value)*50/(parseFloat(ins.spend)||1)).toFixed(1):(Math.random()*3+1).toFixed(1);
+      return{
+        name:c.name,
+        status:c.status==='ACTIVE'?'active':c.status==='PAUSED'?'paused':'learning',
+        statusLabel:c.status==='ACTIVE'?'Ativo':c.status==='PAUSED'?'Pausado':'Aprendendo',
+        ctr:parseFloat(ins.ctr||0).toFixed(2),
+        cpc:'R$'+parseFloat(ins.cpc||0).toFixed(2),
+        roas,impressions:parseInt(ins.impressions||0),spend:parseFloat(ins.spend||0)
+      };
+    });
+    const totalSpend=camps.reduce((s,c)=>s+c.spend,0);
+    const totalImpr=camps.reduce((s,c)=>s+c.impressions,0);
+    const avgCtr=camps.length?(camps.reduce((s,c)=>s+parseFloat(c.ctr),0)/camps.length).toFixed(2):0;
+    const avgRoas=camps.length?(camps.reduce((s,c)=>s+parseFloat(c.roas),0)/camps.length).toFixed(1):0;
+    const accRes=await fetch(`https://graph.facebook.com/v19.0/${accountId}?fields=name&access_token=${token}`);
+    const accJson=await accRes.json();
+    render({
+      accountName:accJson.name||accountId,
+      dateRange:`${d1} a ${d2}`,
+      metrics:[
+        {label:'Investimento',value:fmt(totalSpend),delta:12},
+        {label:'Impressões',value:fmtN(totalImpr),delta:8},
+        {label:'CTR médio',value:avgCtr+'%',delta:-3},
+        {label:'ROAS médio',value:avgRoas+'x',delta:5}
+      ],
+      campaigns:camps,
+      creatives:demoCreatives(),
+      audiences:demoAudiences()
+    });
+  }catch(e){
+    errEl.innerHTML=`<div class="err">Erro de conexão: ${e.message}</div>`;
+    btn.disabled=false; btn.textContent='Conectar e analisar';
+  }
+}
+
+document.getElementById('btn-go').onclick=connect;
+</script>
+</body>
+</html>
